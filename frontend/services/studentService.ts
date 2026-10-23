@@ -8,11 +8,11 @@ export interface StudentRecord {
   status: "active" | "inactive";
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api/v1";
+const API_BASE_URL = "/api";
 
 export const studentService = {
   async getAll(): Promise<StudentRecord[]> {
-    const response = await fetch(`${API_BASE_URL}/students/`);
+    const response = await fetch(`${API_BASE_URL}/students`);
     if (!response.ok) {
       throw new Error(`Failed to fetch students: ${response.statusText}`);
     }
