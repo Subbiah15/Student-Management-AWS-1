@@ -48,7 +48,7 @@ export function DashboardLayout({ children, title, subtitle }: DashboardLayoutPr
           subtitle={subtitle}
           onMenuClick={() => setSidebarOpen(true)}
         />
-        <main className="p-6">{children}</main>
+        <main className="mx-auto w-full max-w-[1600px] px-4 pb-10 pt-6 sm:px-6 lg:px-8 lg:pt-8">{children}</main>
       </div>
     </div>
   )

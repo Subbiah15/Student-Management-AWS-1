@@ -1,327 +1,115 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import { Download, LoaderCircle, Plus, Search, X } from "lucide-react"
+import { toast } from "sonner"
 import { DashboardLayout } from "@/components/dashboard/dashboard-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { Search, Download, TrendingUp, TrendingDown, Minus } from "lucide-react"
+import { GradeRecord, gradeService } from "@/services/gradeService"
+import { StudentRecord, studentService } from "@/services/studentService"
 
-const gradesData = [
-  {
-    id: "STU001",
-    name: "Emma Thompson",
-    grade: "Grade 12-A",
-    math: 95,
-    science: 92,
-    english: 98,
-    history: 88,
-    average: 93.25,
-    trend: "up",
-    rank: 1,
-  },
-  {
-    id: "STU002",
-    name: "James Wilson",
-    grade: "Grade 11-B",
-    math: 88,
-    science: 94,
-    english: 85,
-    history: 90,
-    average: 89.25,
-    trend: "up",
-    rank: 3,
-  },
-  {
-    id: "STU003",
-    name: "Sophia Chen",
-    grade: "Grade 12-A",
-    math: 92,
-    science: 96,
-    english: 90,
-    history: 94,
-    average: 93,
-    trend: "stable",
-    rank: 2,
-  },
-  {
-    id: "STU004",
-    name: "Oliver Martinez",
-    grade: "Grade 10-A",
-    math: 78,
-    science: 82,
-    english: 75,
-    history: 80,
-    average: 78.75,
-    trend: "down",
-    rank: 8,
-  },
-  {
-    id: "STU005",
-    name: "Isabella Brown",
-    grade: "Grade 11-A",
-    math: 90,
-    science: 88,
-    english: 92,
-    history: 85,
-    average: 88.75,
-    trend: "up",
-    rank: 4,
-  },
-  {
-    id: "STU006",
-    name: "William Johnson",
-    grade: "Grade 9-A",
-    math: 85,
-    science: 80,
-    english: 88,
-    history: 82,
-    average: 83.75,
-    trend: "stable",
-    rank: 6,
-  },
-  {
-    id: "STU007",
-    name: "Ava Williams",
-    grade: "Grade 10-B",
-    math: 82,
-    science: 86,
-    english: 84,
-    history: 88,
-    average: 85,
-    trend: "up",
-    rank: 5,
-  },
-  {
-    id: "STU008",
-    name: "Ethan Davis",
-    grade: "Grade 12-B",
-    math: 76,
-    science: 78,
-    english: 80,
-    history: 75,
-    average: 77.25,
-    trend: "down",
-    rank: 9,
-  },
-]
+const gradeLetter = (score: number) => score >= 90 ? "A" : score >= 80 ? "B" : score >= 70 ? "C" : score >= 60 ? "D" : score >= 50 ? "E" : "F"
 
-const getGradeColor = (score: number) => {
-  if (score >= 90) return "text-primary"
-  if (score >= 80) return "text-chart-2"
-  if (score >= 70) return "text-chart-3"
-  return "text-destructive"
-}
-
-const getGradeLetter = (score: number) => {
-  if (score >= 90) return "A"
-  if (score >= 80) return "B"
-  if (score >= 70) return "C"
-  if (score >= 60) return "D"
-  return "F"
+function downloadCsv(grades: GradeRecord[]) {
+  const columns = ["Student ID", "Student", "Class", "Subject", "Score", "Letter", "Term", "Assessment"]
+  const rows = grades.map((grade) => [grade.student_id, grade.student_name, grade.class_name, grade.subject, grade.score, grade.grade_letter, grade.term, grade.exam_type])
+  const escapeCsv = (value: string | number) => `"${String(value).replaceAll('"', '""')}"`
+  const csv = [columns, ...rows].map((row) => row.map(escapeCsv).join(",")).join("\r\n")
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }))
+  const link = document.createElement("a")
+  link.href = url
+  link.download = "student-grades.csv"
+  link.click()
+  URL.revokeObjectURL(url)
 }
 
 export default function GradesPage() {
-  const [searchQuery, setSearchQuery] = useState("")
+  const [grades, setGrades] = useState<GradeRecord[]>([])
+  const [students, setStudents] = useState<StudentRecord[]>([])
+  const [search, setSearch] = useState("")
+  const [studentId, setStudentId] = useState("")
+  const [isLoading, setIsLoading] = useState(true)
+  const [isOpen, setIsOpen] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
+  const [error, setError] = useState("")
+  const [form, setForm] = useState({ student_id: "", subject: "", score: "", term: "Term 1 2026", exam_type: "End of Term" })
 
-  const filteredData = gradesData.filter(
-    (student) =>
-      student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.grade.toLowerCase().includes(searchQuery.toLowerCase())
+  useEffect(() => {
+    let cancelled = false
+    setIsLoading(true)
+    setError("")
+    gradeService.getAll(studentId ? Number(studentId) : undefined)
+      .then((data) => { if (!cancelled) setGrades(data) })
+      .catch((loadError) => { if (!cancelled) setError(loadError instanceof Error ? loadError.message : "Could not load grades") })
+      .finally(() => { if (!cancelled) setIsLoading(false) })
+    return () => { cancelled = true }
+  }, [studentId, refreshKey])
+
+  useEffect(() => {
+    studentService.getAll()
+      .then((data) => setStudents(data.filter((student) => student.status === "active")))
+      .catch(() => setError("Could not load the student list"))
+    const queryStudentId = new URLSearchParams(window.location.search).get("student_id")
+    if (queryStudentId) {
+      setStudentId(queryStudentId)
+      setForm((current) => ({ ...current, student_id: queryStudentId }))
+    }
+  }, [])
+
+  const filteredGrades = useMemo(
+    () => grades.filter((grade) => `${grade.student_name} ${grade.class_name} ${grade.subject} ${grade.term}`.toLowerCase().includes(search.toLowerCase())),
+    [grades, search]
   )
+  const average = grades.length ? grades.reduce((sum, grade) => sum + Number(grade.score), 0) / grades.length : 0
+  const highPerformers = new Set(grades.filter((grade) => Number(grade.score) >= 90).map((grade) => grade.student_id)).size
+  const subjects = new Set(grades.map((grade) => grade.subject)).size
 
-  const classAverage = Math.round(gradesData.reduce((acc, s) => acc + s.average, 0) / gradesData.length * 10) / 10
-  const topPerformers = gradesData.filter((s) => s.average >= 90).length
-  const needsAttention = gradesData.filter((s) => s.average < 75).length
+  const saveGrade = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setIsSaving(true)
+    try {
+      await gradeService.create({
+        student_id: Number(form.student_id),
+        subject: form.subject.trim(),
+        score: Number(form.score),
+        term: form.term.trim(),
+        exam_type: form.exam_type.trim(),
+      })
+      toast.success("Grade recorded")
+      setIsOpen(false)
+      setForm((current) => ({ ...current, subject: "", score: "" }))
+      setRefreshKey((current) => current + 1)
+    } catch (saveError) {
+      toast.error(saveError instanceof Error ? saveError.message : "Could not record grade")
+    } finally {
+      setIsSaving(false)
+    }
+  }
 
   return (
-    <DashboardLayout title="Grades" subtitle="Student academic performance">
-      {/* Stats Summary */}
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-sm text-muted-foreground">Class Average</p>
-          <p className="text-2xl font-bold text-primary">{classAverage}%</p>
-          <p className="text-xs text-muted-foreground mt-1">Grade: {getGradeLetter(classAverage)}</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-sm text-muted-foreground">Top Performers (A)</p>
-          <p className="text-2xl font-bold text-card-foreground">{topPerformers}</p>
-          <p className="text-xs text-muted-foreground mt-1">Students with 90%+</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-sm text-muted-foreground">Needs Attention</p>
-          <p className="text-2xl font-bold text-destructive">{needsAttention}</p>
-          <p className="text-xs text-muted-foreground mt-1">Students below 75%</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-sm text-muted-foreground">Subjects Tracked</p>
-          <p className="text-2xl font-bold text-card-foreground">4</p>
-          <p className="text-xs text-muted-foreground mt-1">Core subjects</p>
-        </div>
+    <DashboardLayout title="Academic progress" subtitle="Review and record student assessment results">
+      <div className="space-y-5">
+        <section className="grid gap-3 sm:grid-cols-3">
+          <div className="rounded-md border border-border bg-card p-4"><p className="text-xs text-muted-foreground">Assessment average</p><p className="mt-1 text-2xl font-semibold">{grades.length ? `${average.toFixed(1)}%` : "—"}</p><p className="mt-1 text-xs text-muted-foreground">Across {grades.length} recorded marks</p></div>
+          <div className="rounded-md border border-border bg-card p-4"><p className="text-xs text-muted-foreground">Students with an A</p><p className="mt-1 text-2xl font-semibold">{highPerformers}</p><p className="mt-1 text-xs text-muted-foreground">At least one score of 90% or higher</p></div>
+          <div className="rounded-md border border-border bg-card p-4"><p className="text-xs text-muted-foreground">Subjects recorded</p><p className="mt-1 text-2xl font-semibold">{subjects}</p><p className="mt-1 text-xs text-muted-foreground">From saved assessments</p></div>
+        </section>
+
+        <section className="flex flex-col gap-3 rounded-md border border-border bg-card p-4 sm:flex-row sm:items-center">
+          <div className="relative flex-1"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input aria-label="Search grades" placeholder="Search student, class, subject, or term" value={search} onChange={(event) => setSearch(event.target.value)} className="pl-9" /></div>
+          <select aria-label="Filter grades by student" value={studentId} onChange={(event) => setStudentId(event.target.value)} className="h-10 rounded-md border border-input bg-background px-3 text-sm"><option value="">All students</option>{students.map((student) => <option key={student.student_id} value={student.student_id}>{student.full_name}</option>)}</select>
+          <Button variant="outline" onClick={() => downloadCsv(filteredGrades)} disabled={!filteredGrades.length}><Download className="mr-2 h-4 w-4" />Export CSV</Button>
+          <Button onClick={() => { setForm((current) => ({ ...current, student_id: studentId || current.student_id || String(students[0]?.student_id ?? "") })); setIsOpen(true) }} disabled={!students.length}><Plus className="mr-2 h-4 w-4" />Enter grade</Button>
+        </section>
+
+        <section className="overflow-hidden rounded-md border border-border bg-card">
+          {error ? <div role="alert" className="flex flex-col items-center gap-3 p-10 text-sm text-destructive"><p>{error}</p><Button variant="outline" onClick={() => setRefreshKey((current) => current + 1)}>Retry</Button></div> : isLoading ? <div className="flex items-center justify-center gap-2 p-10 text-sm text-muted-foreground"><LoaderCircle className="h-4 w-4 animate-spin" />Loading assessments…</div> : filteredGrades.length === 0 ? <p className="p-12 text-center text-sm text-muted-foreground">No assessments match this filter yet.</p> : <div className="overflow-x-auto"><table className="w-full min-w-[720px] text-left text-sm"><thead className="bg-muted/60 text-xs uppercase text-muted-foreground"><tr><th className="px-4 py-3 font-medium">Student</th><th className="px-4 py-3 font-medium">Class</th><th className="px-4 py-3 font-medium">Subject</th><th className="px-4 py-3 font-medium">Assessment</th><th className="px-4 py-3 font-medium">Term</th><th className="px-4 py-3 text-right font-medium">Score</th></tr></thead><tbody>{filteredGrades.map((grade) => <tr key={grade.grade_id} className="border-t border-border"><td className="px-4 py-3 font-medium">{grade.student_name}<span className="ml-2 font-mono text-xs text-muted-foreground">STU{String(grade.student_id).padStart(4, "0")}</span></td><td className="px-4 py-3 text-muted-foreground">{grade.class_name}</td><td className="px-4 py-3">{grade.subject}</td><td className="px-4 py-3 text-muted-foreground">{grade.exam_type}</td><td className="px-4 py-3 text-muted-foreground">{grade.term}</td><td className="px-4 py-3 text-right font-semibold">{Number(grade.score).toFixed(1)}% <span className="ml-1 rounded bg-muted px-1.5 py-0.5 text-xs">{grade.grade_letter || gradeLetter(Number(grade.score))}</span></td></tr>)}</tbody></table></div>}
+        </section>
       </div>
 
-      {/* Actions Bar */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Search students..."
-            className="pl-9 bg-secondary border-border"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="border-border text-muted-foreground hover:text-foreground">
-            <Download className="mr-2 h-4 w-4" />
-            Export Report
-          </Button>
-          <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
-            Enter Grades
-          </Button>
-        </div>
-      </div>
-
-      {/* Grades Table */}
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="border-border hover:bg-transparent">
-              <TableHead className="text-muted-foreground">Rank</TableHead>
-              <TableHead className="text-muted-foreground">Student</TableHead>
-              <TableHead className="text-muted-foreground">Grade</TableHead>
-              <TableHead className="text-muted-foreground text-center">Math</TableHead>
-              <TableHead className="text-muted-foreground text-center">Science</TableHead>
-              <TableHead className="text-muted-foreground text-center">English</TableHead>
-              <TableHead className="text-muted-foreground text-center">History</TableHead>
-              <TableHead className="text-muted-foreground text-center">Average</TableHead>
-              <TableHead className="text-muted-foreground text-center">Trend</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredData
-              .sort((a, b) => a.rank - b.rank)
-              .map((student) => (
-                <TableRow key={student.id} className="border-border">
-                  <TableCell>
-                    <div
-                      className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${
-                        student.rank <= 3
-                          ? "bg-primary/20 text-primary"
-                          : "bg-secondary text-muted-foreground"
-                      }`}
-                    >
-                      #{student.rank}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/20 text-primary font-medium text-sm">
-                        {student.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")}
-                      </div>
-                      <div>
-                        <p className="font-medium text-card-foreground">{student.name}</p>
-                        <p className="text-xs text-muted-foreground">{student.id}</p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{student.grade}</TableCell>
-                  <TableCell className="text-center">
-                    <span className={`font-medium ${getGradeColor(student.math)}`}>
-                      {student.math}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <span className={`font-medium ${getGradeColor(student.science)}`}>
-                      {student.science}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <span className={`font-medium ${getGradeColor(student.english)}`}>
-                      {student.english}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <span className={`font-medium ${getGradeColor(student.history)}`}>
-                      {student.history}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <div className="flex flex-col items-center">
-                      <span className={`font-bold ${getGradeColor(student.average)}`}>
-                        {student.average}%
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        Grade {getGradeLetter(student.average)}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {student.trend === "up" && (
-                      <div className="flex justify-center">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/20">
-                          <TrendingUp className="h-4 w-4 text-primary" />
-                        </div>
-                      </div>
-                    )}
-                    {student.trend === "down" && (
-                      <div className="flex justify-center">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-destructive/20">
-                          <TrendingDown className="h-4 w-4 text-destructive" />
-                        </div>
-                      </div>
-                    )}
-                    {student.trend === "stable" && (
-                      <div className="flex justify-center">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-muted">
-                          <Minus className="h-4 w-4 text-muted-foreground" />
-                        </div>
-                      </div>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Grading Scale */}
-      <div className="mt-6 rounded-xl border border-border bg-card p-4">
-        <h4 className="text-sm font-medium text-card-foreground mb-3">Grading Scale</h4>
-        <div className="flex flex-wrap gap-4">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-primary">A</span>
-            <span className="text-sm text-muted-foreground">90-100%</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-chart-2">B</span>
-            <span className="text-sm text-muted-foreground">80-89%</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-chart-3">C</span>
-            <span className="text-sm text-muted-foreground">70-79%</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-chart-5">D</span>
-            <span className="text-sm text-muted-foreground">60-69%</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-destructive">F</span>
-            <span className="text-sm text-muted-foreground">Below 60%</span>
-          </div>
-        </div>
-      </div>
+      {isOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4" onMouseDown={(event) => event.target === event.currentTarget && setIsOpen(false)}><section role="dialog" aria-modal="true" aria-labelledby="grade-dialog-title" className="w-full max-w-lg rounded-lg border border-border bg-card shadow-2xl"><header className="flex items-start justify-between border-b border-border p-5"><div><p className="text-xs font-semibold uppercase text-primary">Academic record</p><h2 id="grade-dialog-title" className="mt-1 text-lg font-semibold">Enter assessment grade</h2></div><button type="button" aria-label="Close grade form" onClick={() => setIsOpen(false)} className="rounded p-2 text-muted-foreground hover:bg-muted"><X className="h-4 w-4" /></button></header><form onSubmit={saveGrade} className="grid gap-4 p-5"><label className="space-y-1.5 text-sm font-medium">Student<select required value={form.student_id} onChange={(event) => setForm({ ...form, student_id: event.target.value })} className="h-10 w-full rounded-md border border-input bg-background px-3">{students.map((student) => <option key={student.student_id} value={student.student_id}>{student.full_name} · {student.class_name}</option>)}</select></label><label className="space-y-1.5 text-sm font-medium">Subject<input required maxLength={100} value={form.subject} onChange={(event) => setForm({ ...form, subject: event.target.value })} className="h-10 w-full rounded-md border border-input bg-background px-3" /></label><div className="grid gap-4 sm:grid-cols-2"><label className="space-y-1.5 text-sm font-medium">Score (0–100)<input required type="number" min="0" max="100" step="0.01" value={form.score} onChange={(event) => setForm({ ...form, score: event.target.value })} className="h-10 w-full rounded-md border border-input bg-background px-3" /></label><label className="space-y-1.5 text-sm font-medium">Term<input required maxLength={20} value={form.term} onChange={(event) => setForm({ ...form, term: event.target.value })} className="h-10 w-full rounded-md border border-input bg-background px-3" /></label></div><label className="space-y-1.5 text-sm font-medium">Assessment type<input required maxLength={30} value={form.exam_type} onChange={(event) => setForm({ ...form, exam_type: event.target.value })} className="h-10 w-full rounded-md border border-input bg-background px-3" /></label><footer className="mt-1 flex justify-end gap-2 border-t border-border pt-4"><Button type="button" variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button><Button type="submit" disabled={isSaving}>{isSaving && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}Save grade</Button></footer></form></section></div>}
     </DashboardLayout>
   )
 }

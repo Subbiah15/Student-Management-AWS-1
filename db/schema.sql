@@ -105,6 +105,15 @@ CREATE TABLE school_fees (
     UNIQUE (student_id, term)
 );
 
+CREATE TABLE student_attendance (
+    attendance_id   SERIAL       PRIMARY KEY,
+    student_id      INTEGER      NOT NULL REFERENCES students(student_id) ON DELETE CASCADE,
+    attendance_date DATE         NOT NULL,
+    status          VARCHAR(12)  NOT NULL CHECK (status IN ('present', 'absent', 'late', 'excused')),
+    updated_at      TIMESTAMP    NOT NULL DEFAULT NOW(),
+    UNIQUE (student_id, attendance_date)
+);
+
 -- ---------------------------------------------------------------------------
 -- INDEXES — speed up the most common queries
 -- ---------------------------------------------------------------------------
@@ -114,6 +123,8 @@ CREATE INDEX idx_grades_term            ON grades(term);
 CREATE INDEX idx_school_fees_student_id ON school_fees(student_id);
 CREATE INDEX idx_school_fees_status     ON school_fees(status);
 CREATE INDEX idx_classes_teacher_id     ON classes(teacher_id);
+CREATE INDEX idx_attendance_date         ON student_attendance(attendance_date);
+CREATE INDEX idx_attendance_student_id   ON student_attendance(student_id);
 
 -- ---------------------------------------------------------------------------
 -- COMMENTS — self-documenting schema

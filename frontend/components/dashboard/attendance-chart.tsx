@@ -22,30 +22,33 @@ const data = [
 
 export function AttendanceChart() {
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold text-card-foreground">Weekly Attendance</h3>
-        <p className="text-sm text-muted-foreground">Student attendance rate this week</p>
+    <div className="rounded-lg border border-border bg-card p-5 shadow-[0_2px_10px_rgb(27_57_46/4%)] sm:p-6">
+      <div className="mb-5 flex items-start justify-between gap-4">
+        <div>
+          <h3 className="text-base font-semibold text-card-foreground">Weekly Attendance</h3>
+          <p className="mt-1 text-sm text-muted-foreground">Student attendance rate this week</p>
+        </div>
+        <span className="rounded-md bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">This week</span>
       </div>
-      <div className="h-64">
+      <div className="h-56 sm:h-64">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data}>
             <defs>
               <linearGradient id="presentGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="oklch(0.72 0.15 165)" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="oklch(0.72 0.15 165)" stopOpacity={0} />
+                <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.24} />
+                <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.28 0.01 260)" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
             <XAxis
               dataKey="day"
-              stroke="oklch(0.65 0 0)"
+              stroke="var(--muted-foreground)"
               fontSize={12}
               tickLine={false}
               axisLine={false}
             />
             <YAxis
-              stroke="oklch(0.65 0 0)"
+              stroke="var(--muted-foreground)"
               fontSize={12}
               tickLine={false}
               axisLine={false}
@@ -53,17 +56,18 @@ export function AttendanceChart() {
             />
             <Tooltip
               contentStyle={{
-                backgroundColor: "oklch(0.17 0.01 260)",
-                border: "1px solid oklch(0.28 0.01 260)",
+                backgroundColor: "#ffffff",
+                border: "1px solid var(--border)",
                 borderRadius: "8px",
-                color: "oklch(0.95 0 0)",
+                color: "var(--foreground)",
+                boxShadow: "0 8px 24px rgb(23 39 35 / 12%)",
               }}
               formatter={(value: number) => [`${value}%`, "Present"]}
             />
             <Area
               type="monotone"
               dataKey="present"
-              stroke="oklch(0.72 0.15 165)"
+              stroke="var(--primary)"
               strokeWidth={2}
               fillOpacity={1}
               fill="url(#presentGradient)"
@@ -73,11 +77,11 @@ export function AttendanceChart() {
       </div>
       <div className="mt-4 flex items-center justify-center gap-6">
         <div className="flex items-center gap-2">
-          <div className="h-3 w-3 rounded-full bg-primary" />
+          <div className="h-2.5 w-2.5 rounded-full bg-primary" />
           <span className="text-sm text-muted-foreground">Present</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="h-3 w-3 rounded-full bg-destructive" />
+          <div className="h-2.5 w-2.5 rounded-full bg-destructive" />
           <span className="text-sm text-muted-foreground">Absent</span>
         </div>
       </div>

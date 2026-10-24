@@ -7,13 +7,14 @@ import { UserPlus, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { studentSchema, StudentFormValues } from "@/lib/validations/student";
 import { studentService } from "@/services/studentService";
+import type { StudentRecord } from "@/services/studentService";
 
 export default function AddStudentModal({
   classes,
-  setStudentsData,
+  onCreated,
 }: {
   classes: { class_id: number; class_name: string }[];
-  setStudentsData: React.Dispatch<React.SetStateAction<any[]>>;
+  onCreated: (student: StudentRecord) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const {
@@ -26,16 +27,9 @@ export default function AddStudentModal({
   });
 
   const onSubmit = async (data: StudentFormValues) => {
-    console.log("Submitting student data:", data);
     try {
-      await studentService.create(data);
-      const newStudent = {
-        student_id: Date.now(), // Temporary ID for UI purposes
-        full_name: `${data.first_name} ${data.last_name}`,
-        class_name: classes.find((c) => c.class_id === data.class_id)?.class_name || "Unknown",
-        grade_level: parseInt(classes.find((c) => c.class_id === data.class_id)?.class_name.split(" ")[1] || "0"),
-      };
-      setStudentsData((prev) => [...prev, newStudent]);
+      const newStudent = await studentService.create(data);
+      onCreated(newStudent);
       toast.success("Student added successfully!");
       reset();
       setIsOpen(false);
@@ -48,39 +42,43 @@ export default function AddStudentModal({
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+        type="button"
+        className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
-        <UserPlus size={18} /> Add New Student
+        <UserPlus size={17} /> Add student
       </button>
     );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white dark:bg-black/50 rounded-xl shadow-xl w-full max-w-lg overflow-hidden">
-        <div className="flex justify-between items-center p-6 border-b">
-          <h2 className="text-xl font-semibold">Register New Student</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[#142d28]/60 p-4 backdrop-blur-sm">
+      <div role="dialog" aria-modal="true" aria-labelledby="add-student-title" className="my-auto w-full max-w-xl overflow-hidden rounded-lg border border-border bg-card shadow-2xl">
+        <div className="flex items-center justify-between border-b border-border px-5 py-4 sm:px-6">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">Student directory</p>
+            <h2 id="add-student-title" className="mt-1 text-lg font-semibold text-foreground">Register a student</h2>
+          </div>
           <button
             onClick={() => setIsOpen(false)}
-            className="text-gray-400 hover:text-gray-600"
+            type="button"
+            aria-label="Close registration form"
+            className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
-            <X size={24} />
+            <X size={19} />
           </button>
         </div>
 
         <form
-          onSubmit={handleSubmit(onSubmit, (errors) => {
-            console.log("Validation errors:", errors);
-          })}
-          className="p-6 space-y-4"
+          onSubmit={handleSubmit(onSubmit)}
+          className="space-y-5 p-5 sm:p-6"
         >
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium mb-1">
+              <label htmlFor="first_name" className="mb-1.5 block text-sm font-medium text-foreground">
                 First Name
               </label>
-              <input
+              <input id="first_name"
                 {...register("first_name")}
-                className="w-full border rounded-md p-2"
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
               />
               {errors.first_name && (
                 <p className="text-red-500 text-xs mt-1">
@@ -89,12 +87,12 @@ export default function AddStudentModal({
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">
+              <label htmlFor="last_name" className="mb-1.5 block text-sm font-medium text-foreground">
                 Last Name
               </label>
-              <input
+              <input id="last_name"
                 {...register("last_name")}
-                className="w-full border rounded-md p-2"
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
               />
               {errors.last_name && (
                 <p className="text-red-500 text-xs mt-1">
@@ -104,22 +102,38 @@ export default function AddStudentModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium mb-1">
+              <label htmlFor="parent_name" className="mb-1.5 block text-sm font-medium text-foreground">Parent/guardian</label>
+              <input id="parent_name" {...register("parent_name")} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+            </div>
+            <div>
+              <label htmlFor="parent_phone" className="mb-1.5 block text-sm font-medium text-foreground">Guardian contact</label>
+              <input id="parent_phone" type="tel" {...register("parent_phone")} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="address" className="mb-1.5 block text-sm font-medium text-foreground">Address</label>
+            <textarea id="address" rows={2} {...register("address")} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="date_of_birth" className="mb-1.5 block text-sm font-medium text-foreground">
                 Date of Birth
               </label>
-              <input
+              <input id="date_of_birth"
                 type="date"
                 {...register("date_of_birth")}
-                className="w-full border rounded-md p-2"
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Gender</label>
-              <select
+              <label htmlFor="gender" className="mb-1.5 block text-sm font-medium text-foreground">Gender</label>
+              <select id="gender"
                 {...register("gender")}
-                className="w-full border rounded-md p-2"
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <option value="M">Male</option>
                 <option value="F">Female</option>
@@ -129,12 +143,12 @@ export default function AddStudentModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">
+            <label htmlFor="class_id" className="mb-1.5 block text-sm font-medium text-foreground">
               Class Assignment
             </label>
-            <select
+            <select id="class_id"
               {...register("class_id", { valueAsNumber: true })}
-              className="w-full border rounded-md p-2"
+              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
             >
               <option value="">Select a Class</option>
               {classes.map((c) => (
@@ -145,23 +159,23 @@ export default function AddStudentModal({
             </select>
           </div>
 
-          <div className="pt-4 flex gap-3">
+          <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:justify-end">
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="flex-1 px-4 py-2 border rounded-md hover:bg-gray-50"
+              className="h-10 rounded-md border border-border px-4 text-sm font-medium text-foreground transition-colors hover:bg-muted sm:min-w-28"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 flex justify-center"
+              className="flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 sm:min-w-36"
             >
               {isSubmitting ? (
-                <Loader2 className="animate-spin" />
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Saving...</>
               ) : (
-                "Save Student"
+                  "Save student"
               )}
             </button>
           </div>

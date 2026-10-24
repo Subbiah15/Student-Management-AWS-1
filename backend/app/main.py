@@ -1,13 +1,13 @@
 import asyncio
 
-from app.routers import students, classes, teachers
+from app.routers import attendance, classes, grades, students, teachers
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .db import create_db_pool, get_db
 
 app = FastAPI(
-    title="School Management System API",
-    description="API for managing teachers, classes, students, grades, and school fees.",
+    title="Student Management API",
+    description="API for student records, classes, attendance, and grades.",
     version="1.0.0",
 )
 
@@ -32,6 +32,18 @@ async def startup():
         try:
             # Store the pool in the app state so it's accessible globally
             app.state.db_pool = await create_db_pool()
+            await app.state.db_pool.execute(
+                """
+                CREATE TABLE IF NOT EXISTS student_attendance (
+                    attendance_id SERIAL PRIMARY KEY,
+                    student_id INTEGER NOT NULL REFERENCES students(student_id) ON DELETE CASCADE,
+                    attendance_date DATE NOT NULL,
+                    status VARCHAR(12) NOT NULL CHECK (status IN ('present', 'absent', 'late', 'excused')),
+                    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+                    UNIQUE (student_id, attendance_date)
+                )
+                """
+            )
             print("Successfully connected to the database pool.")
             break
         except Exception as e:
@@ -51,6 +63,8 @@ async def shutdown():
 app.include_router(students.router)
 app.include_router(classes.router)
 app.include_router(teachers.router)
+app.include_router(grades.router)
+app.include_router(attendance.router)
 
 @app.get("/")
 async def read_root():

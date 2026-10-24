@@ -19,11 +19,11 @@ export function StatsCard({
   iconColor = "text-primary",
 }: StatsCardProps) {
   return (
-    <div className="rounded-xl border border-border bg-card p-6">
+    <div className="group rounded-lg border border-border bg-card p-5 shadow-[0_2px_10px_rgb(27_57_46/4%)] transition-shadow hover:shadow-[0_8px_24px_rgb(27_57_46/8%)] sm:p-6">
       <div className="flex items-start justify-between">
         <div className="space-y-2">
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <p className="text-3xl font-bold text-card-foreground">{value}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">{title}</p>
+          <p className="text-3xl font-semibold tabular-nums tracking-normal text-card-foreground">{value}</p>
           {change && (
             <p
               className={cn(
@@ -37,8 +37,8 @@ export function StatsCard({
             </p>
           )}
         </div>
-        <div className={cn("rounded-lg bg-secondary p-3", iconColor)}>
-          <Icon className="h-6 w-6" />
+        <div className={cn("rounded-md bg-primary/10 p-3 transition-transform group-hover:-translate-y-0.5", iconColor)}>
+          <Icon className="h-5 w-5" />
         </div>
       </div>
     </div>

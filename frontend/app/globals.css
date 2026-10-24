@@ -1,31 +1,32 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+  --background: #f2f6f3;
+  --foreground: #172723;
   --card: #ffffff;
-  --card-foreground: #171717;
+  --card-foreground: #172723;
   --popover: #ffffff;
-  --popover-foreground: #171717;
-  --primary: #0f766e;
-  --primary-foreground: #f8fafc;
-  --secondary: #f3f4f6;
-  --secondary-foreground: #1f2937;
-  --muted: #f4f4f5;
-  --muted-foreground: #71717a;
-  --accent: #eef2ff;
-  --accent-foreground: #312e81;
-  --destructive: #dc2626;
-  --destructive-foreground: #fef2f2;
-  --border: #e4e4e7;
-  --input: #e4e4e7;
-  --ring: #0f766e;
-  --sidebar: #fafafa;
-  --chart-1: #0f766e;
-  --chart-2: #2563eb;
-  --chart-3: #ca8a04;
-  --chart-4: #7c3aed;
-  --chart-5: #dc2626;
+  --popover-foreground: #172723;
+  --primary: #16745d;
+  --primary-foreground: #f4fbf7;
+  --secondary: #e8efeb;
+  --secondary-foreground: #243a33;
+  --muted: #edf2ef;
+  --muted-foreground: #64756d;
+  --accent: #f6ead5;
+  --accent-foreground: #77511f;
+  --destructive: #c64f43;
+  --destructive-foreground: #fff7f5;
+  --border: #dce6e0;
+  --input: #d4e0d9;
+  --ring: #16745d;
+  --sidebar: #142d28;
+  --chart-1: #16745d;
+  --chart-2: #437da2;
+  --chart-3: #d49a42;
+  --chart-4: #8b6c87;
+  --chart-5: #c64f43;
 }
 
 @theme inline {
@@ -58,38 +59,10 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0f172a;
-    --foreground: #f8fafc;
-    --card: #111827;
-    --card-foreground: #f8fafc;
-    --popover: #111827;
-    --popover-foreground: #f8fafc;
-    --primary: #2dd4bf;
-    --primary-foreground: #042f2e;
-    --secondary: #1f2937;
-    --secondary-foreground: #f3f4f6;
-    --muted: #1f2937;
-    --muted-foreground: #a1a1aa;
-    --accent: #312e81;
-    --accent-foreground: #eef2ff;
-    --destructive: #f87171;
-    --destructive-foreground: #450a0a;
-    --border: #334155;
-    --input: #334155;
-    --ring: #2dd4bf;
-    --sidebar: #0b1120;
-    --chart-1: #2dd4bf;
-    --chart-2: #60a5fa;
-    --chart-3: #facc15;
-    --chart-4: #a78bfa;
-    --chart-5: #f87171;
-  }
-}
-
 body {
-  background: var(--background);
+  background:
+    radial-gradient(ellipse at 88% 0%, rgb(226 177 102 / 8%), transparent 28rem),
+    linear-gradient(135deg, #f5f8f6 0%, #edf3ef 100%);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), sans-serif;
 }

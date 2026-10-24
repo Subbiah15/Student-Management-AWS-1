@@ -10,6 +10,10 @@ const nextConfig: NextConfig = {
         destination: `${apiBaseUrl}/api/v1/students/`,
       },
       {
+        source: "/api/students/:studentId",
+        destination: `${apiBaseUrl}/api/v1/students/:studentId`,
+      },
+      {
         source: "/api/classes",
         destination: `${apiBaseUrl}/api/v1/classes/`,
       },
@@ -20,6 +24,14 @@ const nextConfig: NextConfig = {
       {
         source: "/api/students/:studentId/grades",
         destination: `${apiBaseUrl}/api/v1/students/:studentId/grades`,
+      },
+      {
+        source: "/api/grades",
+        destination: `${apiBaseUrl}/api/v1/grades/`,
+      },
+      {
+        source: "/api/attendance",
+        destination: `${apiBaseUrl}/api/v1/attendance/`,
       },
     ];
   },

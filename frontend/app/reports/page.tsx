@@ -1,173 +1,76 @@
 "use client"
 
+import { useState } from "react"
+import { Download, FileSpreadsheet, LoaderCircle } from "lucide-react"
+import { toast } from "sonner"
 import { DashboardLayout } from "@/components/dashboard/dashboard-layout"
 import { Button } from "@/components/ui/button"
-import {
-  FileText,
-  Users,
-  GraduationCap,
-  DollarSign,
-  Calendar,
-  BarChart3,
-  Download,
-  Eye,
-} from "lucide-react"
+import { attendanceService } from "@/services/attendanceService"
+import { gradeService } from "@/services/gradeService"
+import { studentService } from "@/services/studentService"
 
-const reports = [
-  {
-    id: 1,
-    title: "Student Enrollment Report",
-    description: "Complete list of all enrolled students with their details and status",
-    icon: Users,
-    lastGenerated: "April 8, 2026",
-    category: "Students",
-    color: "bg-primary/20 text-primary",
-  },
-  {
-    id: 2,
-    title: "Teacher Performance Report",
-    description: "Evaluation and performance metrics of all teaching staff",
-    icon: GraduationCap,
-    lastGenerated: "April 5, 2026",
-    category: "Teachers",
-    color: "bg-chart-2/20 text-chart-2",
-  },
-  {
-    id: 3,
-    title: "Financial Summary Report",
-    description: "Overview of fee collection, pending payments, and financial status",
-    icon: DollarSign,
-    lastGenerated: "April 9, 2026",
-    category: "Finance",
-    color: "bg-chart-3/20 text-chart-3",
-  },
-  {
-    id: 4,
-    title: "Attendance Analysis Report",
-    description: "Detailed attendance statistics and trends across all classes",
-    icon: Calendar,
-    lastGenerated: "April 10, 2026",
-    category: "Attendance",
-    color: "bg-chart-4/20 text-chart-4",
-  },
-  {
-    id: 5,
-    title: "Academic Performance Report",
-    description: "Grade analysis and academic progress of students",
-    icon: BarChart3,
-    lastGenerated: "April 7, 2026",
-    category: "Academics",
-    color: "bg-chart-5/20 text-chart-5",
-  },
-  {
-    id: 6,
-    title: "Class Utilization Report",
-    description: "Classroom capacity and utilization statistics",
-    icon: FileText,
-    lastGenerated: "April 6, 2026",
-    category: "Infrastructure",
-    color: "bg-primary/20 text-primary",
-  },
-]
+function downloadCsv(filename: string, rows: (string | number | null)[][]) {
+  const csv = rows.map((row) => row.map((value) => `"${String(value ?? "").replaceAll('"', '""')}"`).join(",")).join("\r\n")
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }))
+  const link = document.createElement("a")
+  link.href = url
+  link.download = filename
+  link.click()
+  URL.revokeObjectURL(url)
+}
 
-const recentReports = [
-  {
-    id: 1,
-    name: "Monthly_Attendance_March_2026.pdf",
-    generatedBy: "Admin User",
-    date: "March 31, 2026",
-    size: "2.4 MB",
-  },
-  {
-    id: 2,
-    name: "Fee_Collection_Q1_2026.pdf",
-    generatedBy: "Finance Manager",
-    date: "March 30, 2026",
-    size: "1.8 MB",
-  },
-  {
-    id: 3,
-    name: "Student_Progress_Report_Q1.pdf",
-    generatedBy: "Academic Head",
-    date: "March 28, 2026",
-    size: "3.2 MB",
-  },
-  {
-    id: 4,
-    name: "Teacher_Evaluation_2025.pdf",
-    generatedBy: "Admin User",
-    date: "March 25, 2026",
-    size: "1.5 MB",
-  },
-]
+function localDate() {
+  const date = new Date()
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+}
 
 export default function ReportsPage() {
-  return (
-    <DashboardLayout title="Reports" subtitle="Generate and download reports">
-      {/* Report Categories */}
-      <div className="mb-8">
-        <h3 className="text-lg font-semibold text-foreground mb-4">Generate Reports</h3>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {reports.map((report) => (
-            <div
-              key={report.id}
-              className="rounded-xl border border-border bg-card p-5 transition-colors hover:border-primary/50"
-            >
-              <div className="flex items-start gap-4 mb-4">
-                <div className={`rounded-lg p-3 ${report.color}`}>
-                  <report.icon className="h-5 w-5" />
-                </div>
-                <div className="flex-1">
-                  <span className="text-xs text-muted-foreground">{report.category}</span>
-                  <h4 className="font-semibold text-card-foreground">{report.title}</h4>
-                </div>
-              </div>
-              <p className="text-sm text-muted-foreground mb-4">{report.description}</p>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">
-                  Last: {report.lastGenerated}
-                </span>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="border-border text-muted-foreground hover:text-foreground">
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                  <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
-                    Generate
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+  const [date, setDate] = useState(localDate)
+  const [loadingReport, setLoadingReport] = useState("")
 
-      {/* Recent Reports */}
-      <div>
-        <h3 className="text-lg font-semibold text-foreground mb-4">Recent Reports</h3>
-        <div className="rounded-xl border border-border bg-card divide-y divide-border">
-          {recentReports.map((report) => (
-            <div key={report.id} className="flex items-center justify-between p-4">
-              <div className="flex items-center gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary">
-                  <FileText className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <div>
-                  <p className="font-medium text-card-foreground">{report.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    Generated by {report.generatedBy} • {report.date}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="text-sm text-muted-foreground">{report.size}</span>
-                <Button variant="outline" size="sm" className="border-border text-muted-foreground hover:text-foreground">
-                  <Download className="h-4 w-4 mr-2" />
-                  Download
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
+  const withLoading = async (name: string, action: () => Promise<void>) => {
+    setLoadingReport(name)
+    try {
+      await action()
+      toast.success(`${name} downloaded`)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : `Could not generate ${name.toLowerCase()}`)
+    } finally {
+      setLoadingReport("")
+    }
+  }
+
+  const exportEnrollment = () => withLoading("Enrollment roster", async () => {
+    const students = await studentService.getAll()
+    downloadCsv("student-enrollment.csv", [["Student ID", "First name", "Last name", "Date of birth", "Gender", "Class", "Grade level", "Parent/guardian", "Contact", "Status"], ...students.map((student) => [student.student_id, student.first_name, student.last_name, student.date_of_birth, student.gender, student.class_name, student.grade_level, student.parent_name, student.parent_phone, student.status])])
+  })
+
+  const exportGrades = () => withLoading("Academic results", async () => {
+    const grades = await gradeService.getAll()
+    downloadCsv("student-academic-results.csv", [["Student ID", "Student", "Class", "Subject", "Score", "Grade", "Term", "Assessment", "Recorded"], ...grades.map((grade) => [grade.student_id, grade.student_name, grade.class_name, grade.subject, grade.score, grade.grade_letter, grade.term, grade.exam_type, grade.recorded_at])])
+  })
+
+  const exportAttendance = () => withLoading("Attendance register", async () => {
+    const records = await attendanceService.getByDate(date)
+    downloadCsv(`student-attendance-${date}.csv`, [["Date", "Student ID", "Student", "Class", "Status"], ...records.map((record) => [record.attendance_date, record.student_id, record.full_name, record.class_name, record.status])])
+  })
+
+  const reports = [
+    { title: "Enrollment roster", detail: "Student identity, class assignment, guardian contact, and active status.", action: exportEnrollment },
+    { title: "Academic results", detail: "Saved subject scores, grades, terms, and assessment types.", action: exportGrades },
+    { title: "Attendance register", detail: "Daily attendance status for active students on the selected date.", action: exportAttendance },
+  ]
+
+  return (
+    <DashboardLayout title="Student reports" subtitle="Export enrollment, attendance, and academic records">
+      <div className="space-y-5">
+        <section className="flex flex-col gap-3 rounded-md border border-border bg-card p-4 sm:flex-row sm:items-end sm:justify-between">
+          <div><h2 className="text-sm font-semibold">Attendance report date</h2><p className="mt-1 text-xs text-muted-foreground">Choose the day to include in the register export.</p></div>
+          <label className="space-y-1.5 text-sm font-medium">Date<input type="date" value={date} onChange={(event) => setDate(event.target.value)} className="block h-10 rounded-md border border-input bg-background px-3" /></label>
+        </section>
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {reports.map((report) => <article key={report.title} className="flex min-h-52 flex-col rounded-md border border-border bg-card p-5"><div className="flex items-start gap-3"><div className="rounded-md bg-primary/10 p-2.5 text-primary"><FileSpreadsheet className="h-5 w-5" /></div><div><h2 className="font-semibold">{report.title}</h2><p className="mt-1 text-sm leading-6 text-muted-foreground">{report.detail}</p></div></div><Button className="mt-auto self-start" onClick={() => void report.action()} disabled={!!loadingReport}>{loadingReport === report.title ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}Download CSV</Button></article>)}
+        </section>
       </div>
     </DashboardLayout>
   )
