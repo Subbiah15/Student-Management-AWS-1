@@ -10,7 +10,9 @@ Current tables:
 - `grades`
 - `school_fees`
 
-The current schema is a useful prototype, but it needs to become migration-driven and include the security, audit, attendance, academic, and finance tables required by the product vision.
+`db/schema.sql` is an initial bootstrap, not a versioned migration system. It creates missing tables and indexes without dropping existing tables or records. It does not alter already-existing table definitions; use explicit, reviewed migrations for schema changes.
+
+`db/seed.sql` inserts synthetic demonstration records. Treat these records as sample data, not institution records or live operational statistics.
 
 ## Current ERD
 

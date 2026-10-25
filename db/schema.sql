@@ -1,19 +1,12 @@
 -- =============================================================================
--- School Management System — Schema Migration
+-- School Management System — Initial schema bootstrap
 -- =============================================================================
-
--- Drop tables in reverse dependency order (safe to re-run)
-DROP TABLE IF EXISTS school_fees  CASCADE;
-DROP TABLE IF EXISTS grades       CASCADE;
-DROP TABLE IF EXISTS students     CASCADE;
-DROP TABLE IF EXISTS classes      CASCADE;
-DROP TABLE IF EXISTS teachers     CASCADE;
 
 -- ---------------------------------------------------------------------------
 -- TEACHERS
 -- Must be created before classes (classes reference teacher_id)
 -- ---------------------------------------------------------------------------
-CREATE TABLE teachers (
+CREATE TABLE IF NOT EXISTS teachers (
     teacher_id   SERIAL        PRIMARY KEY,
     first_name   VARCHAR(50)   NOT NULL,
     last_name    VARCHAR(50)   NOT NULL,
@@ -28,7 +21,7 @@ CREATE TABLE teachers (
 -- ---------------------------------------------------------------------------
 -- CLASSES
 -- ---------------------------------------------------------------------------
-CREATE TABLE classes (
+CREATE TABLE IF NOT EXISTS classes (
     class_id      SERIAL       PRIMARY KEY,
     class_name    VARCHAR(50)  NOT NULL UNIQUE,   -- e.g. "Grade 5A"
     grade_level   INTEGER      NOT NULL CHECK (grade_level BETWEEN 1 AND 12),
@@ -41,7 +34,7 @@ CREATE TABLE classes (
 -- ---------------------------------------------------------------------------
 -- STUDENTS
 -- ---------------------------------------------------------------------------
-CREATE TABLE students (
+CREATE TABLE IF NOT EXISTS students (
     student_id    SERIAL       PRIMARY KEY,
     first_name    VARCHAR(50)  NOT NULL,
     last_name     VARCHAR(50)  NOT NULL,
@@ -59,7 +52,7 @@ CREATE TABLE students (
 -- ---------------------------------------------------------------------------
 -- GRADES
 -- ---------------------------------------------------------------------------
-CREATE TABLE grades (
+CREATE TABLE IF NOT EXISTS grades (
     grade_id      SERIAL          PRIMARY KEY,
     student_id    INTEGER         NOT NULL REFERENCES students(student_id) ON DELETE CASCADE,
     subject       VARCHAR(100)    NOT NULL,
@@ -86,7 +79,7 @@ CREATE TABLE grades (
 -- ---------------------------------------------------------------------------
 -- SCHOOL FEES
 -- ---------------------------------------------------------------------------
-CREATE TABLE school_fees (
+CREATE TABLE IF NOT EXISTS school_fees (
     fee_id        SERIAL          PRIMARY KEY,
     student_id    INTEGER         NOT NULL REFERENCES students(student_id) ON DELETE CASCADE,
     term          VARCHAR(20)     NOT NULL,
@@ -105,7 +98,7 @@ CREATE TABLE school_fees (
     UNIQUE (student_id, term)
 );
 
-CREATE TABLE student_attendance (
+CREATE TABLE IF NOT EXISTS student_attendance (
     attendance_id   SERIAL       PRIMARY KEY,
     student_id      INTEGER      NOT NULL REFERENCES students(student_id) ON DELETE CASCADE,
     attendance_date DATE         NOT NULL,
@@ -117,14 +110,14 @@ CREATE TABLE student_attendance (
 -- ---------------------------------------------------------------------------
 -- INDEXES — speed up the most common queries
 -- ---------------------------------------------------------------------------
-CREATE INDEX idx_students_class_id      ON students(class_id);
-CREATE INDEX idx_grades_student_id      ON grades(student_id);
-CREATE INDEX idx_grades_term            ON grades(term);
-CREATE INDEX idx_school_fees_student_id ON school_fees(student_id);
-CREATE INDEX idx_school_fees_status     ON school_fees(status);
-CREATE INDEX idx_classes_teacher_id     ON classes(teacher_id);
-CREATE INDEX idx_attendance_date         ON student_attendance(attendance_date);
-CREATE INDEX idx_attendance_student_id   ON student_attendance(student_id);
+CREATE INDEX IF NOT EXISTS idx_students_class_id      ON students(class_id);
+CREATE INDEX IF NOT EXISTS idx_grades_student_id      ON grades(student_id);
+CREATE INDEX IF NOT EXISTS idx_grades_term            ON grades(term);
+CREATE INDEX IF NOT EXISTS idx_school_fees_student_id ON school_fees(student_id);
+CREATE INDEX IF NOT EXISTS idx_school_fees_status     ON school_fees(status);
+CREATE INDEX IF NOT EXISTS idx_classes_teacher_id     ON classes(teacher_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_date         ON student_attendance(attendance_date);
+CREATE INDEX IF NOT EXISTS idx_attendance_student_id   ON student_attendance(student_id);
 
 -- ---------------------------------------------------------------------------
 -- COMMENTS — self-documenting schema

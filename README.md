@@ -12,30 +12,34 @@ Implemented today:
 
 - Basic Docker Compose setup for PostgreSQL, FastAPI, and Next.js.
 - Basic API version prefix for students, teachers, and classes.
-- Seeded PostgreSQL schema for teachers, classes, students, grades, and school fees.
+- Non-destructive initial PostgreSQL schema bootstrap for teachers, classes, students, attendance, grades, and school fees.
+- Synthetic seed records for local demonstration only; they are not institutional data.
 - Initial frontend pages and reusable UI components.
-- Architecture, database, and roadmap documentation.
+- Architecture and database documentation.
 
 Not production-ready yet:
 
-- Authentication and authorization are not implemented.
-- Server-side RBAC is not implemented.
+- Authentication and authorization for administrators, teachers, and students are not implemented.
+- Server-side role-based data access is not implemented.
 - Audit logs are not implemented.
 - Database migrations are not implemented.
-- Attendance, report cards, invoices, payments, and analytics APIs are incomplete or missing.
+- Teacher management, subjects, examinations, fee/payment workflows, notifications, and institution settings are incomplete or missing.
+- Attendance history, report cards, payments, and analytics APIs are incomplete or missing.
+- The current frontend does not provide all required pages or role-specific navigation.
 - Automated backend, frontend, and end-to-end tests are not yet present.
 
 ## Product Scope
 
 Core modules:
 
-- Authentication and authorization: admin and teacher roles, JWT access tokens, refresh tokens, password hashing, server-side authorization.
+- Authentication and authorization: administrator, teacher, and student roles, secure sessions, password handling, and server-side authorization.
 - Student management: profiles, enrollment, search, filtering, pagination, sorting, and status tracking.
-- Class management: classes, teacher assignment, student enrollment, and capacity tracking.
-- Academic records: subjects, assessments, grades, grade calculations, and report cards.
-- Attendance: recording, history, and analytics.
-- Finance: invoices, payments, outstanding balances, and financial summaries.
-- Dashboard: student, attendance, revenue, academic, and recent activity metrics.
+- Teacher, class, and subject management: profiles, assignments, enrollment, and capacity tracking.
+- Academic records: examinations, assessments, grades, configurable calculations, and report cards.
+- Attendance: daily marking, history, summaries, and analytics.
+- Finance: fee structures, invoices, payment history, outstanding balances, and financial summaries.
+- Reporting, notifications, announcements, user profiles, and institution settings.
+- Role-aware dashboards with metrics derived from application records.
 
 Explicitly out of scope:
 
@@ -49,11 +53,8 @@ Explicitly out of scope:
 
 ## Documentation
 
-- [Repository Audit](docs/AUDIT.md)
 - [Architecture Overview](docs/ARCHITECTURE.md)
 - [Database Design](docs/DATABASE.md)
-- [Engineering Roadmap](docs/ROADMAP.md)
-- [Engineering Decision Log](docs/DECISIONS.md)
 
 ## Tech Stack
 
