@@ -106,6 +106,60 @@ Local URLs:
 | API Docs | http://localhost:8000/docs | Swagger UI |
 | ReDoc | http://localhost:8000/redoc | API reference |
 
+## Docker Hub and Minikube
+
+The application has separate frontend, backend, and PostgreSQL images. The PostgreSQL image initializes a fresh database from `db/schema.sql` and `db/seed.sql`. These Kubernetes files run the same three services without changing the existing EC2 deployment.
+
+### Build and publish the images
+
+Create a Docker Hub account if you do not have one, create three **public** repositories named `school-management-frontend`, `school-management-backend`, and `school-management-db`, then sign in locally with `docker login`. From the Project 1 directory, these commands use the configured Docker Hub username `subbiah15`:
+
+```powershell
+$DockerHubUser = "YOUR_DOCKERHUB_USERNAME"
+docker build -t "$DockerHubUser/school-management-frontend:latest" -f frontend/Dockerfile frontend
+docker build -t "$DockerHubUser/school-management-backend:latest" -f backend/Dockerfile backend
+docker build -t "$DockerHubUser/school-management-db:latest" -f db/Dockerfile .
+
+docker push "$DockerHubUser/school-management-frontend:latest"
+docker push "$DockerHubUser/school-management-backend:latest"
+docker push "$DockerHubUser/school-management-db:latest"
+```
+
+The frontend is exported as static files and served by Nginx, which also proxies the `/api` requests to the Kubernetes `backend` Service. The Docker Hub links are:
+
+- `https://hub.docker.com/r/subbiah15/school-management-frontend`
+- `https://hub.docker.com/r/subbiah15/school-management-backend`
+- `https://hub.docker.com/r/subbiah15/school-management-db`
+
+### Start Minikube and deploy
+
+On Windows, install Minikube if needed with `winget install Kubernetes.minikube`, then start it using Docker Desktop:
+
+```powershell
+minikube start --driver=docker
+```
+
+Create the Kubernetes Secret from the local `.env` file. The file is git-ignored; do not put real passwords in manifests or commit `.env`:
+
+```powershell
+kubectl create secret generic school-db --from-env-file=.env --dry-run=client -o yaml | kubectl apply -f -
+```
+
+The deployment file already references the `subbiah15` images, so apply it directly:
+
+```powershell
+kubectl apply -f service.yaml
+kubectl apply -f deployment.yaml
+kubectl get pods
+kubectl get services
+kubectl rollout status deployment/db
+kubectl rollout status deployment/backend
+kubectl rollout status deployment/frontend
+minikube service frontend
+```
+
+The frontend is exposed through a Minikube NodePort Service. `minikube service frontend` opens it in a browser; `minikube service frontend --url` prints its URL. The app is for the local Minikube demonstration and does not replace or publish the existing EC2 deployment.
+
 ## Development
 
 Backend:
